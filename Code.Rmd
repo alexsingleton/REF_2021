@@ -1,0 +1,261 @@
+
+
+
+```{r}
+install.packages("janitor")
+install.packages("ggrepel")
+install.packages("kableExtra")
+
+
+library(readxl)
+library(tidyverse)
+library(janitor)
+library( ggrepel)
+library(kableExtra)
+```
+
+```{r}
+
+
+#Import and clean columns 2014
+df = read_excel("REF2014 Results.xlsx", range = "A8:P7652",na = "-",guess_max = 5000)
+df %<>%
+  clean_names() %>%
+  mutate(institution_code_ukprn = replace(institution_code_ukprn, institution_code_ukprn == "ZZZZZZZZ", "10009315")) %>% #Fixes one code to 2021 value
+  mutate(across(institution_code_ukprn, as.numeric)) %>%
+  mutate(GPA_2014= ((x4*4) + (x3*3) + (x2*2) + (x1*1) + (unclassified*0))/100) %>%
+  mutate(Research_Power_2014 = GPA_2014 * fte_category_a_staff_submitted) %>%
+  mutate(PCT_3_4_2014 = x3 +x4)
+
+
+
+# Import and clean columns 2021
+df_21 = read_excel("REF 2021 Results - All - 2022-05-06.xlsx", range = "A7:R7559",na = "-",guess_max = 5000)
+df_21 %<>%
+  clean_names() %>%
+  mutate(GPA_2021= ((x4*4) + (x3*3) + (x2*2) + (x1*1) + (unclassified*0))/100) %>%
+  mutate(Research_Power_2021 = GPA_2021 * fte_of_submitted_staff)  %>%
+  mutate(PCT_3_4_2021 = x3 +x4)
+
+
+#Import locations
+uni = read_csv("inst_lookup.csv")
+
+```
+
+# UOA Comparison
+
+## Change Analysis
+
+
+```{r}
+
+
+
+
+
+# Overall GPA Change
+
+UOA_14 <- 17 # UOA of Interest
+multiple_14 <- "Geography" # Needed where multiple submissions possible
+
+ov_14 <- df %>%
+  filter((profile == "Overall") & (unit_of_assessment_number == UOA_14) & (is.na(multiple_submission_name) | grepl(multiple_14, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,GPA_2014,PCT_3_4_2014)
+  
+  
+UOA_21 <- 14 # UOA of Interest
+multiple_21 <- "" # Needed where multiple submissions possible
+
+ov_21 <- df_21 %>%
+  filter((profile == "Overall") & (unit_of_assessment_number == UOA_21) & (is.na(multiple_submission_name) | grepl(multiple_21, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,institution_name,GPA_2021,PCT_3_4_2021)
+
+
+
+ov_14_21 <- ov_21 %>%
+  left_join(ov_14) %>%
+  mutate(
+    GPA_Change = GPA_2021 - GPA_2014,
+    PCT_3_4_2021_Change = PCT_3_4_2021 - PCT_3_4_2014
+  )
+
+
+ov_14_21
+
+```
+
+
+```{r}
+ggplot(ov_14_21, aes(x = GPA_2014, y = GPA_2021,label = institution_name)) +
+   geom_text_repel(size=1) +
+    geom_point(color = 'red') +
+  geom_abline() 
+
+
+```
+
+
+
+```{r}
+
+
+# Outputs GPA Change
+
+UOA_14 <- 17 # UOA of Interest
+multiple_14 <- "Geography" # Needed where multiple submissions possible
+
+op_14 <- df %>%
+  filter((profile == "Outputs") & (unit_of_assessment_number == UOA_14) & (is.na(multiple_submission_name) | grepl(multiple_14, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,GPA_2014,PCT_3_4_2014)
+  
+  
+UOA_21 <- 14 # UOA of Interest
+multiple_21 <- "" # Needed where multiple submissions possible
+
+op_21 <- df_21 %>%
+  filter((profile == "Outputs") & (unit_of_assessment_number == UOA_21) & (is.na(multiple_submission_name) | grepl(multiple_21, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,institution_name,GPA_2021,PCT_3_4_2021)
+
+
+
+op_14_21 <- op_21 %>%
+  left_join(op_14) %>%
+  mutate(
+    GPA_Change = GPA_2021 - GPA_2014,
+    PCT_3_4_2021_Change = PCT_3_4_2021 - PCT_3_4_2014
+  )
+
+
+op_14_21
+
+
+
+```
+
+
+
+
+
+```{r}
+ggplot(op_14_21, aes(x = GPA_2014, y = GPA_2021,label = institution_name)) +
+   geom_text_repel(size=1) +
+    geom_point(color = 'red') +
+  geom_abline() 
+
+
+```
+
+```{r}
+
+
+# Impact GPA Change
+
+UOA_14 <- 17 # UOA of Interest
+multiple_14 <- "Geography" # Needed where multiple submissions possible
+
+i_14 <- df %>%
+  filter((profile == "Impact") & (unit_of_assessment_number == UOA_14) & (is.na(multiple_submission_name) | grepl(multiple_14, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,GPA_2014,PCT_3_4_2014)
+  
+  
+UOA_21 <- 14 # UOA of Interest
+multiple_21 <- "" # Needed where multiple submissions possible
+
+i_21 <- df_21 %>%
+  filter((profile == "Impact") & (unit_of_assessment_number == UOA_21) & (is.na(multiple_submission_name) | grepl(multiple_21, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,institution_name,GPA_2021,PCT_3_4_2021)
+
+
+
+i_14_21 <- i_21 %>%
+  left_join(i_14) %>%
+  mutate(
+    GPA_Change = GPA_2021 - GPA_2014,
+    PCT_3_4_2021_Change = PCT_3_4_2021 - PCT_3_4_2014
+  )
+
+
+i_14_21
+
+
+
+```
+
+```{r}
+ggplot(i_14_21, aes(x = GPA_2014, y = GPA_2021,label = institution_name)) +
+   geom_text_repel(size=1) +
+    geom_point(color = 'red') +
+  geom_abline() 
+
+
+```
+
+
+```{r}
+# Impact GPA Change
+
+UOA_14 <- 17 # UOA of Interest
+multiple_14 <- "Geography" # Needed where multiple submissions possible
+
+e_14 <- df %>%
+  filter((profile == "Environment") & (unit_of_assessment_number == UOA_14) & (is.na(multiple_submission_name) | grepl(multiple_14, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,GPA_2014,PCT_3_4_2014)
+  
+  
+UOA_21 <- 14 # UOA of Interest
+multiple_21 <- "" # Needed where multiple submissions possible
+```
+
+
+```{r}
+e_21 <- df_21 %>%
+  filter((profile == "Environment") & (unit_of_assessment_number == UOA_21) & (is.na(multiple_submission_name) | grepl(multiple_21, multiple_submission_name, fixed = TRUE))) %>%
+  select(institution_code_ukprn,institution_name,GPA_2021,PCT_3_4_2021)
+
+
+
+e_14_21 <- i_21 %>%
+  left_join(i_14) %>%
+  mutate(
+    GPA_Change = GPA_2021 - GPA_2014,
+    PCT_3_4_2021_Change = PCT_3_4_2021 - PCT_3_4_2014
+  )
+
+
+e_14_21
+
+
+
+```
+```{r}
+ggplot(e_14_21, aes(x = GPA_2014, y = GPA_2021,label = institution_name)) +
+   geom_text_repel(size=1) +
+    geom_point(color = 'red') +
+  geom_abline() 
+
+
+```
+
+
+# 2021 Rankings (Institution)
+
+```{r}
+
+ID <- 10006842 #University of Liverpool
+
+
+
+df_21 %>%
+  filter(institution_code_ukprn == ID &  profile == "Overall") %>%
+  select(unit_of_assessment_name,GPA_2021) %>%
+  arrange(desc(GPA_2021)) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+
+
+
+
+```
+
